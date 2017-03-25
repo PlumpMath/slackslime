@@ -24,6 +24,7 @@ var tmpDir = tmpobj.name;
 var wormholes = [];
 var slackslime_settings;
 
+console.log("### Setting up wormholes..");
 
 if(!('configfile' in argv)) {
   // legacy format: nodejs slackslime.js [channel name] [RTM API token 1] [RTM API token 2] [RTM API token 3] [more tokens]
@@ -46,6 +47,9 @@ if(!('configfile' in argv)) {
   wormholes.push(new Wormhole(wormhole_config, { "tmpDir": tmpDir }));
 
 } else {
+  
+  console.log("### Reading from configfile: " + argv.configfile);
+
   var config = JSON.parse(fs.readFileSync(argv.configfile, 'utf8'))
   _.forEach(config.wormholes, function(wormhole_config, name) {
 
@@ -62,5 +66,6 @@ if(!('configfile' in argv)) {
 
 
 wormholes.forEach(function(wh) {
+  console.log("### > Starting to run Wormhole " + wh.whConfig.channelName + "..");
   wh.run();
 });

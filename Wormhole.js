@@ -5,12 +5,12 @@ var request = require('request');
 
 class Wormhole {
 
-  constructor(wormhole, config) {
-    this.wormhole = wormhole;
-    this.config = config;
-    // inside wormhole is an array of portals; each 'portal' is a slack channel and token pair.
+  constructor(whConfig, options) {
+    this.whConfig = whConfig;
+    // inside whConfig is an array of portals; each 'portal' is a slack channel and token pair.
     this.slacks = new Array();
     this.connectedTeams = 0;
+    this.whConfig.tmpDir = options.tmpDir;
   }
 
   run() {
@@ -20,7 +20,7 @@ class Wormhole {
     // main event loop
     //----------------
     
-    context.wormhole.tokens.forEach(function(token, i) {
+    context.whConfig.tokens.forEach(function(token, i) {
 
         //-------------------
         // manage connections
@@ -36,16 +36,16 @@ class Wormhole {
         // session info
         context.slacks[i].on('hello', function(data) {
 
-            var helloInstance = this.slackData.team.name + ' / ' + context.wormhole.channelName;
+            var helloInstance = this.slackData.team.name + ' / ' + context.whConfig.channelName;
 
             console.log('\n' + _.repeat(i, helloInstance.length) + '\n' + helloInstance + '\n' + _.repeat(i, helloInstance.length) + '\n');
 
-            if(this.getChannel(context.wormhole.channelName)) {
-                this.channelId = this.getChannel(context.wormhole.channelName).id;
+            if(this.getChannel(context.whConfig.channelName)) {
+                this.channelId = this.getChannel(context.whConfig.channelName).id;
                 this.channelType = 'public';
                 console.log('connecting to public channel ' + this.channelId + '\n');
             } else {
-                this.channelId = this.getGroup(context.wormhole.channelName).id;
+                this.channelId = this.getGroup(context.whConfig.channelName).id;
                 this.channelType = 'private';
                 console.log('connecting to private channel ' + this.channelId + '\n');
             }
@@ -73,13 +73,13 @@ class Wormhole {
                     if(self.channelType === 'public') {
 
                         var channelMatch = slack.slackData.channels.filter(function (channelRemote) {
-                            return channelRemote.name === context.wormhole.channelName;
+                            return channelRemote.name === context.whConfig.channelName;
                         })[0];
 
                     } else {
 
                         var channelMatch = slack.slackData.groups.filter(function (channelRemote) {
-                            return channelRemote.name === context.wormhole.channelName;
+                            return channelRemote.name === context.whConfig.channelName;
                         })[0];
 
                     }
@@ -113,7 +113,7 @@ class Wormhole {
                 var channel = self.getGroup(data.channel);
             }
 
-            if(typeof data.text === 'undefined' || data.subtype === 'bot_message' || !channel || channel.name !== context.wormhole.channelName) {
+            if(typeof data.text === 'undefined' || data.subtype === 'bot_message' || !channel || channel.name !== context.whConfig.channelName) {
                 return;
             }
 
@@ -184,7 +184,7 @@ class Wormhole {
             else if(!data.subtype) { // send normal user message to other team(s)
 
                 var message = {
-                    channel: '#' + context.wormhole.channelName,
+                    channel: '#' + context.whConfig.channelName,
                     text: data.text,
                     username: data.username + ' @ ' + teamName,
                     icon_url: data.iconUrl,
@@ -241,7 +241,7 @@ class Wormhole {
                 var channel = self.getGroup(data.file.channels.splice(-1)[0]);
             }
 
-            if(channel.name !== context.wormhole.channelName) {
+            if(channel.name !== context.whConfig.channelName) {
                 return;
             }
 
@@ -256,7 +256,7 @@ class Wormhole {
 
             var download_options = {
                 url: data.file.url_private,
-                directory: context.config.tmpDir,
+                directory: context.whConfig.tmpDir,
                 filename: data.file.name,
                 token: self.token
             };
@@ -269,7 +269,7 @@ class Wormhole {
                 }
 
                 var upload_options = {
-                    channels: '#' + context.wormhole.channelName,
+                    channels: '#' + context.whConfig.channelName,
                     filename: data.file.name,
                     title: data.username + ' @ ' + teamName + ' posted: ' + data.file.name,
                     filetype: 'auto',
@@ -292,7 +292,7 @@ class Wormhole {
 
         }  // slacks[i].on('message', ...)
 
-    });  // context.wormhole.tokens.forEach(function(token, i), ...)
+    });  // context.whConfig.tokens.forEach(function(token, i), ...)
 
   }
 }
