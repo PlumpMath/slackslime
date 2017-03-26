@@ -16,6 +16,12 @@ class Wormhole {
   run() {
     var context = this; // using 'context' because some other methods use self and it gets confusing
 
+    function tokenToName(token) {
+      if("token_names" in context.whConfig) { return context.whConfig.token_names[_.indexOf(context.whConfig.tokens, token)]; }
+      else { return token; }
+    }
+
+
     //----------------
     // main event loop
     //----------------
@@ -27,18 +33,26 @@ class Wormhole {
         //-------------------
 
         // initialize
+
+        console.log("Initializing slackbot for: " + tokenToName(token) +  "...");
+
         context.slacks[i] = new slackAPI({
             'token': token,
             'logging': false,  // for output debug
             'autoReconnect': true
         });
+        console.log("Init done!");
 
         // session info
         context.slacks[i].on('hello', function(data) {
 
+            console.log("Successfully connected to the server!: " + tokenToName(token))
+
             var helloInstance = this.slackData.team.name + ' / ' + context.whConfig.channelName;
 
             console.log('\n' + _.repeat(i, helloInstance.length) + '\n' + helloInstance + '\n' + _.repeat(i, helloInstance.length) + '\n');
+
+            console.log("Getting channel info for " +context.whConfig.channelName);
 
             if(this.getChannel(context.whConfig.channelName)) {
                 this.channelId = this.getChannel(context.whConfig.channelName).id;
@@ -56,7 +70,6 @@ class Wormhole {
         context.slacks[i].on('close', function(data) {
             context.connectedTeams--;
         });
-
 
         //---------------------
         // typing notifications
@@ -96,6 +109,9 @@ class Wormhole {
 
         context.slacks[i].on('message', function(data) {
 
+
+            var self = this;
+
             // handle file_share message subtypes instead of file_shared events
             // Slack's API doesn't send much info with file_shared anymore
             if(data.subtype === 'file_share') {
@@ -103,9 +119,13 @@ class Wormhole {
                 return;
             }
 
-            var self = this;
+console.log("################### " + tokenToName(self.token) + " heard:" + data.text);
+console.log(self.token);
+
             var user = self.getUser(data.user);
             var teamName = self.slackData.team.name;
+
+console.log("is it a public or group channel?");
 
             if(self.channelType === 'public') {
                 var channel = self.getChannel(data.channel);
@@ -113,9 +133,12 @@ class Wormhole {
                 var channel = self.getGroup(data.channel);
             }
 
+console.log("is undefined?");
             if(typeof data.text === 'undefined' || data.subtype === 'bot_message' || !channel || channel.name !== context.whConfig.channelName) {
                 return;
             }
+
+console.log("not a bot message!");
 
             // parse user names
             if(user) {
@@ -125,6 +148,7 @@ class Wormhole {
 
             // look for mentions and convert user handles to plaintext
             var re = RegExp("((<@)[^\>]+)>", 'g');
+console.log("user stuff");
 
             if(re.test(data.text)) {
                 data.text = data.text.replace(re, function getUserName(userString) {
@@ -132,6 +156,7 @@ class Wormhole {
                 });
             }
 
+console.log("text replacement");
             // messaging logic
             if(data.text.charAt(0) === '!') {  // bot / channel commands should go here
 
@@ -183,6 +208,8 @@ class Wormhole {
 
             else if(!data.subtype) { // send normal user message to other team(s)
 
+console.log("we're gonna send a message! compose it..")
+
                 var message = {
                     channel: '#' + context.whConfig.channelName,
                     text: data.text,
@@ -192,11 +219,14 @@ class Wormhole {
                     unfurl_media: true
                 };
 
+console.log("sending it toe veryone except for ourselves ");
                 context.slacks.forEach(function(slack) {
                     if(slack.token !== self.token) {
+                    console.log(tokenToName(slack.token) + " is sending it to its own channel!");
                         slack.reqAPI('chat.postMessage', message);
                     }
                 })
+console.log("sending done");
             }
         });
 
