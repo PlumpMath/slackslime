@@ -72,9 +72,15 @@ class Wormhole {
 
                     if(self.channelType === 'public') {
 
+                        // console.log(self.slackData.team.name);
+                        // console.log(context.whConfig.channelName);
+
                         var channelMatch = slack.slackData.channels.filter(function (channelRemote) {
                             return channelRemote.name === context.whConfig.channelName;
                         })[0];
+
+                        // console.log('+++++++');
+                        // console.log(channelMatch);
 
                     } else {
 
@@ -82,9 +88,46 @@ class Wormhole {
                             return channelRemote.name === context.whConfig.channelName;
                         })[0];
 
+                        // console.log('-------');
+                        // console.log(channelMatch);
+
                     }
 
                     slack.sendTyping(channelMatch.id);
+                }
+            })
+        });
+
+
+        //-------
+        // emojis
+        //-------
+
+        context.slacks[i].on('reaction', function(data) {
+
+            var self = this;
+
+            context.slacks.forEach(function(slack) {
+
+                if(slack.token !== self.token) {
+
+                    // console.log(self);
+
+                    // if(self.channelType === 'public') {
+
+                    //     var channelMatch = slack.slackData.channels.filter(function (channelRemote) {
+                    //         return channelRemote.name === context.whConfig.channelName;
+                    //     })[0];
+
+                    // } else {
+
+                    //     var channelMatch = slack.slackData.groups.filter(function (channelRemote) {
+                    //         return channelRemote.name === context.whConfig.channelName;
+                    //     })[0];
+
+                    // }
+
+                    // slack.sendTyping(channelMatch.id);
                 }
             })
         });
